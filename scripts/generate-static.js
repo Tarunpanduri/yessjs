@@ -2,11 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import { renderToString } from 'react-dom/server';
 import React from 'react';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { dirname } from 'path';
 
-// Get __dirname equivalent in ES modules
+// Resolve __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
 // Define metadata for SEO
 const pageMetadata = {
@@ -27,65 +28,69 @@ const pageMetadata = {
   },
 };
 
-// Define pages dynamically, using .jsx
-const pagesDir = path.resolve(__dirname, '../'); // Adjust path
-const buildDir = path.resolve(__dirname, '../frontend/dist'); // Match Vite's output
+// Define pages dynamically
+const pagesDir = path.resolve(__dirname, '../frontend/src/pages'); // Adjust path
+const pageFiles = fs.readdirSync(pagesDir).filter(file => file.endsWith('.jsx'));
 
-// Ensure output directory exists
+const pages = await Promise.all(
+  pageFiles.map(async (file) => {
+    const name = file.replace('.jsx', '');
+    const filePath = path.join(pagesDir, file); // Get absolute path
+    const fileUrl = pathToFileURL(filePath).href; // Convert to file URL
+
+    try {
+      const module = await import(fileUrl);
+      return {
+        name,
+        component: module.default,
+        outputPath: file === 'index.jsx' ? 'index.html' : `${name}.html`,
+        metadata: pageMetadata[name] || {
+          title: 'Default Title - My Static Site',
+          description: 'This is a default description for a page.',
+          keywords: 'default, static, website',
+        },
+      };
+    } catch (error) {
+      console.error(`❌ Error importing ${file}:`, error);
+      return null;
+    }
+  })
+);
+
+// Filter out failed imports
+const validPages = pages.filter(Boolean);
+
+const buildDir = path.resolve(__dirname, '../dist'); // Match Vite's output
+
 if (!fs.existsSync(buildDir)) {
   fs.mkdirSync(buildDir, { recursive: true });
 }
 
-// Read all .jsx files from pages directory
-const pageFiles = fs.readdirSync(pagesDir).filter(file => file.endsWith('.jsx'));
+validPages.forEach(({ component, outputPath, metadata }) => {
+  const html = renderToString(React.createElement(component));
+  const fullPath = path.join(buildDir, outputPath);
 
-const generateStaticPages = async () => {
-  for (const file of pageFiles) {
-    const name = file.replace('.jsx', '');
-    const outputPath = name === 'index' ? 'index.html' : `${name}.html`;
-    const metadata = pageMetadata[name] || {
-      title: 'Default Title - My Static Site',
-      description: 'This is a default description for a page.',
-      keywords: 'default, static, website',
-    };
+  fs.writeFileSync(
+    fullPath,
+    `<!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>${metadata.title}</title>
+      <meta name="description" content="${metadata.description}" />
+      <meta name="keywords" content="${metadata.keywords}" />
+      <meta property="og:title" content="${metadata.title}" />
+      <meta property="og:description" content="${metadata.description}" />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://example.com/${outputPath}" />
+    </head>
+    <body>
+      <div id="root">${html}</div>
+      <script type="module" src="/src/index.jsx"></script>
+    </body>
+  </html>`
+  );
+});
 
-    try {
-      // Import component dynamically
-      const filePath = `file://${path.resolve(pagesDir, file)}`;
-      const module = await import(filePath);
-      const Component = module.default;
-
-      // Render the React component to a string
-      const html = renderToString(React.createElement(Component));
-
-      // Build the final HTML output
-      const fullHtml = `<!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>${metadata.title}</title>
-          <meta name="description" content="${metadata.description}" />
-          <meta name="keywords" content="${metadata.keywords}" />
-          <meta property="og:title" content="${metadata.title}" />
-          <meta property="og:description" content="${metadata.description}" />
-          <meta property="og:type" content="website" />
-          <meta property="og:url" content="https://example.com/${outputPath}" />
-        </head>
-        <body>
-          <div id="root">${html}</div>
-          <script type="module" src="/src/index.jsx"></script>
-        </body>
-      </html>`;
-
-      // Write to the output file
-      fs.writeFileSync(path.join(buildDir, outputPath), fullHtml);
-      console.log(`✅ Page generated: ${outputPath}`);
-    } catch (error) {
-      console.error(`❌ Error generating ${name}.html:`, error);
-    }
-  }
-};
-
-// Execute the static page generation
-generateStaticPages().then(() => console.log('✅ All static pages generated successfully!'));
+console.log('✅ Static pages generated successfully with SEO optimization!');
