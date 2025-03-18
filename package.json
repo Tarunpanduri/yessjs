@@ -6,7 +6,7 @@
     "dev": "concurrently \"vite\" \"node backend/src/server.cjs\"",
     "build": "vite build",
     "start": "node backend/src/server.js",
-    "build:static": "babel-node scripts/generate-static.js"
+    "build:static": "node scripts/generate-static.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.0.0",
