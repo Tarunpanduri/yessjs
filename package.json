@@ -2,9 +2,10 @@
   "name": "project-name",
   "version": "1.0.0",
   "scripts": {
-        "dev": "concurrently \"vite\" \"node backend/src/server.js\"",
-        "build": "vite build",
-        "start": "node backend/src/server.js"
+    "dev": "concurrently \"vite\" \"node backend/src/server.js\"",
+    "build": "vite build",
+    "start": "node backend/src/server.js",
+    "build:static": "node scripts/generate-static.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.0.0",
@@ -13,6 +14,7 @@
     "express": "^4.18.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
+    "react-router-dom": "^7.3.0",
     "vite": "^4.0.0"
   },
   "devDependencies": {

@@ -1,18 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import AppRouter from './router';
+
 
 function App() {
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    fetch('http://localhost:5000/api/message')
-      .then((res) => res.json())
-      .then((data) => setMessage(data.text))
-      .catch((error) => console.error('Error fetching data:', error));
-  }, []);
-
   return (
     <div>
-      <h1>WELCOME TO {message}</h1>
+      <AppRouter />
     </div>
   );
 }
