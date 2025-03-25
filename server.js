@@ -1,18 +1,37 @@
-const express = require('express');
-const path = require('path');
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 
 const app = express();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Serve static files from the 'dist' directory
-app.use(express.static(path.join(__dirname, 'dist')));
+// Middleware for parsing JSON
+app.use(express.json());
 
-// Handle all other routes by serving 'index.html'
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+// 1️⃣ Serve Static Frontend from `dist/`
+app.use(express.static(path.join(__dirname, "frontend/dist")));
+
+// 2️⃣ Auto-Register API Routes
+const apiDir = path.join(__dirname, "backend/src/api");
+
+fs.readdirSync(apiDir).forEach((file) => {
+  if (file.endsWith(".js")) {
+    const route = `/api/${file.replace(".js", "")}`;
+    import(path.join(apiDir, file)).then((module) => {
+      app.use(route, module.default);
+      console.log(`✅ API route loaded: ${route}`);
+    });
+  }
 });
 
-// Use the PORT provided by Railway or default to 3000
+// 3️⃣ Handle Frontend Page Routing Dynamically
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend/dist/index.html"));
+});
+
+// Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Framework running on http://localhost:${PORT}/`);
 });

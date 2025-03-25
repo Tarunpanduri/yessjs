@@ -1,9 +1,8 @@
-import express from 'express';
-
+import express from "express";
 const router = express.Router();
 
-router.get('/', (req, res) => {
-  res.json({ message: 'Hello from message API!' });
+router.get("/", (req, res) => {
+  res.json({ message: "Hello from API!" });
 });
 
-export default router; // ✅ Ensure it's an ES module
+export default router;

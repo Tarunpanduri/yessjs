@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"node backend/src/server.mjs\"",
+    "dev": "vite --host & node server.js",
     "build": "vite build",
-    "start": "node backend/src/server.cjs",
-    "build:static": "node scripts/generate-static.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.0.0",
